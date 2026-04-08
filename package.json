@@ -80,6 +80,12 @@
           "minimum": 1,
           "description": "How long to snooze reminders (in minutes)."
         },
+        "annoyingReviewReminder.snoozeEscalationThresholdMinutes": {
+          "type": "number",
+          "default": 120,
+          "minimum": 1,
+          "description": "How long (in minutes) a user can keep snoozing before the reminder escalates to the next level."
+        },
         "annoyingReviewReminder.enabled": {
           "type": "boolean",
           "default": true,

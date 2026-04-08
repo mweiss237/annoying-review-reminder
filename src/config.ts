@@ -5,6 +5,7 @@ export interface ExtensionConfig {
   pollIntervalSeconds: number;
   maxBrutalityLevel: number;
   snoozeDurationMinutes: number;
+  snoozeEscalationThresholdMinutes: number;
   enabled: boolean;
 }
 
@@ -15,6 +16,7 @@ export function getConfig(): ExtensionConfig {
     pollIntervalSeconds: cfg.get<number>('pollIntervalSeconds', 300),
     maxBrutalityLevel: cfg.get<number>('maxBrutalityLevel', 5),
     snoozeDurationMinutes: cfg.get<number>('snoozeDurationMinutes', 30),
+    snoozeEscalationThresholdMinutes: cfg.get<number>('snoozeEscalationThresholdMinutes', 120),
     enabled: cfg.get<boolean>('enabled', true),
   };
 }

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 const DISMISS_COUNTS_KEY = 'dismissCounts';
 const SNOOZE_UNTIL_KEY = 'snoozeUntil';
+const FIRST_SNOOZE_TIMESTAMPS_KEY = 'firstSnoozeTimestamps';
 const ORIGINAL_COLORS_KEY = 'originalColorCustomizations';
 const ORIGINAL_THEME_KEY = 'originalColorTheme';
 
@@ -35,6 +36,7 @@ export async function resetDismiss(prId: string): Promise<void> {
 
 export async function resetAllDismissCounts(): Promise<void> {
   await globalState.update(DISMISS_COUNTS_KEY, {});
+  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, {});
 }
 
 export async function cleanupStale(currentPrIds: Set<string>): Promise<void> {
@@ -46,6 +48,39 @@ export async function cleanupStale(currentPrIds: Set<string>): Promise<void> {
     }
   }
   await globalState.update(DISMISS_COUNTS_KEY, cleaned);
+
+  const timestamps = getFirstSnoozeTimestamps();
+  const cleanedTimestamps: Record<string, number> = {};
+  for (const [id, ts] of Object.entries(timestamps)) {
+    if (currentPrIds.has(id)) {
+      cleanedTimestamps[id] = ts;
+    }
+  }
+  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, cleanedTimestamps);
+}
+
+// --- First snooze timestamps (for snooze-based escalation) ---
+
+function getFirstSnoozeTimestamps(): Record<string, number> {
+  return globalState.get<Record<string, number>>(FIRST_SNOOZE_TIMESTAMPS_KEY, {});
+}
+
+export function getFirstSnoozeTimestamp(prId: string): number | undefined {
+  return getFirstSnoozeTimestamps()[prId];
+}
+
+export async function setFirstSnoozeTimestamp(prId: string): Promise<void> {
+  const timestamps = getFirstSnoozeTimestamps();
+  if (timestamps[prId] === undefined) {
+    timestamps[prId] = Date.now();
+    await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, timestamps);
+  }
+}
+
+export async function clearFirstSnoozeTimestamp(prId: string): Promise<void> {
+  const timestamps = getFirstSnoozeTimestamps();
+  delete timestamps[prId];
+  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, timestamps);
 }
 
 // --- Snooze ---

@@ -9,6 +9,9 @@ import {
     setSnooze,
     cleanupStale,
     getMaxLevel,
+    getFirstSnoozeTimestamp,
+    setFirstSnoozeTimestamp,
+    clearFirstSnoozeTimestamp,
     restoreOriginalColors,
     restoreOriginalTheme,
 } from '../state';
@@ -73,6 +76,17 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
     const currentIds = new Set(reviews.map((r) => r.id));
     await cleanupStale(currentIds);
 
+    // Escalate if snooze threshold exceeded
+    const thresholdMs = config.snoozeEscalationThresholdMinutes * 60 * 1000;
+    for (const review of reviews) {
+      const firstSnooze = getFirstSnoozeTimestamp(review.id);
+      if (firstSnooze !== undefined && Date.now() - firstSnooze >= thresholdMs) {
+        await incrementDismiss(review.id);
+        await clearFirstSnoozeTimestamp(review.id);
+        log(`Snooze threshold exceeded for ${review.repo}#${review.number}, escalating`);
+      }
+    }
+
     // Determine the highest escalation level across all pending reviews
     let maxActiveLevel = 0;
     for (const review of reviews) {
@@ -101,6 +115,9 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
         break;
 
       case 'snoozed':
+        for (const review of reviews) {
+          await setFirstSnoozeTimestamp(review.id);
+        }
         await setSnooze(config.snoozeDurationMinutes);
         cleanupAllEffects();
         await restoreOriginalColors();
@@ -109,9 +126,10 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
         break;
 
       case 'opened':
-        // Reset dismiss counts for opened reviews
+        // Reset dismiss counts and snooze timestamps for opened reviews
         for (const review of reviews) {
           await resetDismiss(review.id);
+          await clearFirstSnoozeTimestamp(review.id);
         }
         cleanupAllEffects();
         await restoreOriginalColors();
