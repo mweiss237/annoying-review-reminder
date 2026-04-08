@@ -23,6 +23,8 @@ import { stopNuclear } from './nuclear';
 
 let pollInterval: ReturnType<typeof setInterval> | undefined;
 let isPolling = false;
+let paused = false;
+let lastReviews: import('../types').PendingReview[] = [];
 let outputChannel: vscode.OutputChannel;
 
 export function getOutputChannel(): vscode.OutputChannel {
@@ -38,6 +40,26 @@ function log(message: string): void {
   );
 }
 
+export function getLastReviews(): import('../types').PendingReview[] {
+  return lastReviews;
+}
+
+export function isPaused(): boolean {
+  return paused;
+}
+
+export function togglePause(context: vscode.ExtensionContext): void {
+  paused = !paused;
+  if (paused) {
+    stopPolling();
+    log('Extension paused');
+  } else {
+    startPolling(context);
+    log('Extension resumed');
+  }
+  updateStatusBar(paused ? 0 : lastReviews.length, paused);
+}
+
 export async function poll(context: vscode.ExtensionContext): Promise<void> {
   if (isPolling) {
     log('Skipping poll — previous one still running');
@@ -45,9 +67,9 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
   }
 
   const config = getConfig();
-  if (!config.enabled) {
-    log('Extension disabled, skipping poll');
-    updateStatusBar(0);
+  if (!config.enabled || paused) {
+    log(paused ? 'Extension paused, skipping poll' : 'Extension disabled, skipping poll');
+    updateStatusBar(0, paused);
     return;
   }
 
@@ -63,8 +85,10 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
     const reviews = await fetchPendingReviews();
     log(`Found ${reviews.length} pending review(s)`);
 
+    lastReviews = reviews;
+
     if (reviews.length === 0) {
-      updateStatusBar(0);
+      updateStatusBar(0, false);
       await cleanupStale(new Set());
       cleanupAllEffects();
       await restoreOriginalColors();

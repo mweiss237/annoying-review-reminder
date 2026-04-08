@@ -1,6 +1,6 @@
 {
   "name": "annoying-review-reminder",
-  "displayName": "Incredibly Annoying Review Reminder",
+  "displayName": "Annoying Review Reminder",
   "description": "Brutally reminds you about pending PR reviews with escalating annoyance levels — from gentle nudges to full-screen chaos.",
   "version": "0.1.0",
   "publisher": "annoying-review-reminder",
@@ -27,6 +27,16 @@
       {
         "command": "annoyingReviewReminder.refresh",
         "title": "Refresh Pending Reviews",
+        "category": "Review Reminder"
+      },
+      {
+        "command": "annoyingReviewReminder.showReviews",
+        "title": "Show Pending Reviews",
+        "category": "Review Reminder"
+      },
+      {
+        "command": "annoyingReviewReminder.togglePause",
+        "title": "Pause / Resume Reminders",
         "category": "Review Reminder"
       },
       {

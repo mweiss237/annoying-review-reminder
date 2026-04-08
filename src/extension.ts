@@ -14,6 +14,9 @@ import {
     restartPolling,
     fullCleanup,
     getOutputChannel,
+    getLastReviews,
+    isPaused,
+    togglePause,
 } from './reminders/engine';
 import { stopNuclear } from './reminders/nuclear';
 import { disposeAggressive } from './reminders/aggressive';
@@ -45,6 +48,81 @@ export async function activate(
       async () => {
         output.appendLine('Manual refresh triggered');
         await poll(context);
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'annoyingReviewReminder.showReviews',
+      async () => {
+        const reviews = getLastReviews();
+        const pausedState = isPaused();
+
+        const items: vscode.QuickPickItem[] = [];
+
+        if (reviews.length > 0) {
+          items.push(
+            ...reviews.map((r) => ({
+              label: `$(git-pull-request) ${r.repo}#${r.number}`,
+              description: r.title,
+              detail: `by ${r.author}`,
+            }))
+          );
+          items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+        }
+
+        items.push({
+          label: pausedState ? '$(debug-start) Resume Reminders' : '$(debug-pause) Pause Reminders',
+        });
+        items.push({ label: '$(refresh) Refresh Reviews' });
+
+        const selected = await vscode.window.showQuickPick(items, {
+          placeHolder: reviews.length > 0
+            ? `${reviews.length} pending review${reviews.length === 1 ? '' : 's'}`
+            : 'No pending reviews',
+          title: 'Review Reminder',
+        });
+
+        if (!selected) {
+          return;
+        }
+
+        if (selected.label.includes('Pause Reminders') || selected.label.includes('Resume Reminders')) {
+          togglePause(context);
+          return;
+        }
+
+        if (selected.label.includes('Refresh Reviews')) {
+          await poll(context);
+          return;
+        }
+
+        // Open the selected PR
+        const match = selected.label.match(/#(\d+)$/);
+        if (match) {
+          const prNumber = parseInt(match[1], 10);
+          const review = reviews.find((r) => r.number === prNumber && selected.label.includes(r.repo));
+          if (review) {
+            await vscode.env.openExternal(vscode.Uri.parse(review.url));
+          }
+        }
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'annoyingReviewReminder.togglePause',
+      () => {
+        togglePause(context);
+        const paused = isPaused();
+        vscode.window.showInformationMessage(
+          paused
+            ? 'Review reminders paused.'
+            : 'Review reminders resumed.'
+        );
+        output.appendLine(paused ? 'Paused' : 'Resumed');
       }
     )
   );

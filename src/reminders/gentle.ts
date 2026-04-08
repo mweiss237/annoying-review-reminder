@@ -9,16 +9,20 @@ function getOrCreateStatusBar(): vscode.StatusBarItem {
       vscode.StatusBarAlignment.Left,
       100
     );
-    statusBarItem.command = 'annoyingReviewReminder.refresh';
+    statusBarItem.command = 'annoyingReviewReminder.showReviews';
   }
   return statusBarItem;
 }
 
-export function updateStatusBar(count: number): void {
+export function updateStatusBar(count: number, paused?: boolean): void {
   const bar = getOrCreateStatusBar();
-  if (count > 0) {
+  if (paused) {
+    bar.text = `$(git-pull-request) Reviews (Paused)`;
+    bar.tooltip = 'Click to see options — reminders paused';
+    bar.show();
+  } else if (count > 0) {
     bar.text = `$(git-pull-request) ${count} review${count === 1 ? '' : 's'} pending`;
-    bar.tooltip = 'Click to refresh pending reviews';
+    bar.tooltip = 'Click to see pending reviews';
     bar.show();
   } else {
     bar.text = '$(git-pull-request) No reviews pending';
