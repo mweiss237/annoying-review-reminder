@@ -2,7 +2,7 @@
   "name": "annoying-review-reminder",
   "displayName": "Annoying Review Reminder",
   "description": "Brutally reminds you about pending PR reviews with escalating annoyance levels — from gentle nudges to full-screen chaos.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "mweiss237",
   "icon": "media/icon.png",
   "license": "MIT",
