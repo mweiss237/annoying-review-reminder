@@ -2,8 +2,9 @@
   "name": "annoying-review-reminder",
   "displayName": "Annoying Review Reminder",
   "description": "Brutally reminds you about pending PR reviews with escalating annoyance levels — from gentle nudges to full-screen chaos.",
-  "version": "0.1.0",
-  "publisher": "annoying-review-reminder",
+  "version": "0.2.0",
+  "publisher": "mweiss237",
+  "icon": "media/icon.png",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -110,7 +111,7 @@
     "package": "node esbuild.mjs --minify",
     "vscode:prepublish": "npm run package",
     "lint": "eslint src --ext ts",
-    "create:package": "npx @vscode/vsce package"
+    "create:vsix": "npx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
