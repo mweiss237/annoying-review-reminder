@@ -6,6 +6,8 @@ export interface PendingReview {
   repo: string;
   author: string;
   createdAt: string;
+  additions: number;
+  deletions: number;
 }
 
 export type ReminderAction = 'dismissed' | 'opened' | 'snoozed';

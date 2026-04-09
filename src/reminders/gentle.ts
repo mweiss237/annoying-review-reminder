@@ -39,7 +39,7 @@ export const gentle: ReminderLevel = {
 
     const prList = reviews
       .slice(0, 5)
-      .map((r) => `• ${r.repo}#${r.number}: ${r.title} (by ${r.author})`)
+      .map((r) => `• ${r.repo}#${r.number}: ${r.title} (by ${r.author}) [+${r.additions} / -${r.deletions}]`)
       .join('\n');
 
     const extra =

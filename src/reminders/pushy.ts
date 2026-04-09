@@ -28,7 +28,7 @@ export const pushy: ReminderLevel = {
 
     const prList = reviews
       .slice(0, 8)
-      .map((r) => `• ${r.repo}#${r.number}: ${r.title} (by ${r.author})`)
+      .map((r) => `• ${r.repo}#${r.number}: ${r.title} (by ${r.author}) [+${r.additions} / -${r.deletions}]`)
       .join('\n');
 
     const extra =

@@ -38,6 +38,7 @@ function buildWebviewHtml(reviews: PendingReview[]): string {
         <td>${escapeHtml(r.repo)}#${r.number}</td>
         <td>${escapeHtml(r.title)}</td>
         <td>@${escapeHtml(r.author)}</td>
+        <td><span style="color:#4caf50;font-weight:bold">+${r.additions}</span> / <span style="color:#f44336;font-weight:bold">-${r.deletions}</span></td>
         <td><button onclick="openPr('${escapeHtml(r.url)}')">REVIEW NOW</button></td>
       </tr>`
     )
@@ -132,7 +133,7 @@ function buildWebviewHtml(reviews: PendingReview[]): string {
     <h1>🚨 REVIEW YOUR PRs NOW 🚨</h1>
     <h2>${reviews.length} pull request${reviews.length === 1 ? '' : 's'} need your review!</h2>
     <table>
-      <tr><th>Repo</th><th>Title</th><th>Author</th><th>Action</th></tr>
+      <tr><th>Repo</th><th>Title</th><th>Author</th><th>Changes</th><th>Action</th></tr>
       ${reviewRows}
     </table>
     <p class="warning">

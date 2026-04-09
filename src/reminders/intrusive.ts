@@ -23,6 +23,7 @@ function formatReviewDocument(reviews: PendingReview[]): string {
     lines.push(`  📋 ${review.repo}#${review.number}`);
     lines.push(`     "${review.title}"`);
     lines.push(`     by @${review.author} — ${new Date(review.createdAt).toLocaleDateString()}`);
+    lines.push(`     ✅ +${review.additions}  ❌ -${review.deletions}`);
     lines.push(`     🔗 ${review.url}`);
     lines.push('');
   }

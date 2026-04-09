@@ -79,6 +79,7 @@ function buildNuclearHtml(
         <td>${escapeHtml(r.repo)}#${r.number}</td>
         <td>${escapeHtml(r.title)}</td>
         <td>@${escapeHtml(r.author)}</td>
+        <td><span style="color:#4caf50;font-weight:bold">+${r.additions}</span> / <span style="color:#f44336;font-weight:bold">-${r.deletions}</span></td>
         <td><button onclick="openPr('${escapeHtml(r.url)}')">REVIEW</button></td>
       </tr>`
     )
@@ -183,7 +184,7 @@ function buildNuclearHtml(
       ${reviews.length} PR${reviews.length === 1 ? '' : 's'} AWAITING YOUR REVIEW
     </div>
     <table>
-      <tr><th>Repository</th><th>Pull Request</th><th>Author</th><th></th></tr>
+      <tr><th>Repository</th><th>Pull Request</th><th>Author</th><th>Changes</th><th></th></tr>
       ${reviewRows}
     </table>
     <div class="escape">

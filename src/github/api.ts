@@ -24,6 +24,37 @@ function repoFromUrl(repositoryUrl: string): string {
   return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
 }
 
+interface GitHubPullResponse {
+  additions: number;
+  deletions: number;
+}
+
+async function fetchPrStats(
+  repo: string,
+  prNumber: number,
+  accessToken: string
+): Promise<{ additions: number; deletions: number }> {
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${repo}/pulls/${prNumber}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+    if (!response.ok) {
+      return { additions: 0, deletions: 0 };
+    }
+    const data = (await response.json()) as GitHubPullResponse;
+    return { additions: data.additions, deletions: data.deletions };
+  } catch {
+    return { additions: 0, deletions: 0 };
+  }
+}
+
 export async function fetchPendingReviews(): Promise<PendingReview[]> {
   const session = await getGitHubSession(false);
   const config = getConfig();
@@ -67,7 +98,7 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
 
   const data = (await response.json()) as GitHubSearchResponse;
 
-  let reviews: PendingReview[] = data.items.map((item) => ({
+  const basicReviews = data.items.map((item) => ({
     id: `${item.id}`,
     number: item.number,
     title: item.title,
@@ -78,10 +109,23 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
   }));
 
   // Client-side filter when multiple repos are configured
+  let filtered = basicReviews;
   if (repoFilters.length > 1) {
     const repoSet = new Set(repoFilters.map((r) => r.toLowerCase()));
-    reviews = reviews.filter((r) => repoSet.has(r.repo.toLowerCase()));
+    filtered = filtered.filter((r) => repoSet.has(r.repo.toLowerCase()));
   }
+
+  // Fetch additions/deletions stats for each PR
+  const statsPromises = filtered.map((r) =>
+    fetchPrStats(r.repo, r.number, session.accessToken)
+  );
+  const stats = await Promise.all(statsPromises);
+
+  const reviews: PendingReview[] = filtered.map((r, i) => ({
+    ...r,
+    additions: stats[i].additions,
+    deletions: stats[i].deletions,
+  }));
 
   return reviews;
 }

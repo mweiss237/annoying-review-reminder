@@ -10,7 +10,7 @@ export const nudge: ReminderLevel = {
 
     const prList = reviews
       .slice(0, 5)
-      .map((r) => `${r.repo}#${r.number}: ${r.title}`)
+      .map((r) => `${r.repo}#${r.number}: ${r.title} [+${r.additions}/-${r.deletions}]`)
       .join(' | ');
 
     const extra =

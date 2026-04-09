@@ -1,22 +1,22 @@
 import * as vscode from 'vscode';
 import { getConfig } from './config';
 import {
-    initState,
-    resetAllDismissCounts,
-    setSnooze,
-    restoreOriginalColors,
-    restoreOriginalTheme,
+  initState,
+  resetAllDismissCounts,
+  setSnooze,
+  restoreOriginalColors,
+  restoreOriginalTheme,
 } from './state';
 import { getGitHubSession } from './github/auth';
 import {
-    startPolling,
-    poll,
-    restartPolling,
-    fullCleanup,
-    getOutputChannel,
-    getLastReviews,
-    isPaused,
-    togglePause,
+  startPolling,
+  poll,
+  restartPolling,
+  fullCleanup,
+  getOutputChannel,
+  getLastReviews,
+  isPaused,
+  togglePause,
 } from './reminders/engine';
 import { stopNuclear } from './reminders/nuclear';
 import { disposeAggressive } from './reminders/aggressive';
@@ -66,7 +66,7 @@ export async function activate(
             ...reviews.map((r) => ({
               label: `$(git-pull-request) ${r.repo}#${r.number}`,
               description: r.title,
-              detail: `by ${r.author}`,
+              detail: `by ${r.author}  $(diff-added) ${r.additions}  $(diff-removed) ${r.deletions}`,
             }))
           );
           items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
