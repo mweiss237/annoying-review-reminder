@@ -51,7 +51,6 @@ function playSound(context: vscode.ExtensionContext): void {
 <html>
 <body style="background:#1e1e1e;color:#ccc;padding:20px;font-family:monospace;">
   <h2>🔔 Review Reminder Active</h2>
-  <p>A sound is playing to remind you about pending reviews.</p>
   <p>Use command <strong>"Review Reminder: Snooze All Reminders"</strong> to stop.</p>
   <script>
     const ctx = new AudioContext();
@@ -70,7 +69,8 @@ function playSound(context: vscode.ExtensionContext): void {
       setTimeout(() => beep(1000, 0.2), 300);
       setTimeout(() => beep(800, 0.2), 600);
     }
-    playPattern();
+    // Disable sound for now 
+    // playPattern();
     setInterval(playPattern, 3000);
   </script>
 </body>
@@ -122,17 +122,13 @@ export const intrusive: ReminderLevel = {
     playSound(context);
 
     const action = await vscode.window.showErrorMessage(
-      `🔊 ${reviews.length} reviews need your attention NOW! A reminder document has been opened.`,
+      `🚨 ${reviews.length} reviews need your attention NOW! A reminder document has been opened.`,
       'Open First PR',
-      'Snooze'
     );
 
     if (action === 'Open First PR') {
       await vscode.env.openExternal(vscode.Uri.parse(reviews[0].url));
       return 'opened';
-    }
-    if (action === 'Snooze') {
-      return 'snoozed';
     }
     return 'dismissed';
   },

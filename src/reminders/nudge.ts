@@ -20,7 +20,6 @@ export const nudge: ReminderLevel = {
       `⚠️ ${reviews.length} PR review${reviews.length === 1 ? '' : 's'} waiting for you! ${prList}${extra}`,
       'Open First PR',
       'Open All in Browser',
-      'Snooze'
     );
 
     if (action === 'Open First PR') {
@@ -32,9 +31,6 @@ export const nudge: ReminderLevel = {
         await vscode.env.openExternal(vscode.Uri.parse(review.url));
       }
       return 'opened';
-    }
-    if (action === 'Snooze') {
-      return 'snoozed';
     }
     return 'dismissed';
   },

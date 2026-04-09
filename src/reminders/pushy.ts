@@ -39,7 +39,6 @@ export const pushy: ReminderLevel = {
       { modal: true },
       'Open First PR',
       'Open All',
-      'Snooze'
     );
 
     if (action === 'Open First PR') {
@@ -53,10 +52,6 @@ export const pushy: ReminderLevel = {
       }
       await restoreOriginalColors();
       return 'opened';
-    }
-    if (action === 'Snooze') {
-      await restoreOriginalColors();
-      return 'snoozed';
     }
 
     // Dismissed — colors stay red!

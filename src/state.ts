@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-const DISMISS_COUNTS_KEY = 'dismissCounts';
+const BRUTALITY_LEVELS_KEY = 'brutalityLevels';
+const LEVEL_UP_TIMES_KEY = 'levelUpTimes';
 const SNOOZE_UNTIL_KEY = 'snoozeUntil';
-const FIRST_SNOOZE_TIMESTAMPS_KEY = 'firstSnoozeTimestamps';
 const ORIGINAL_COLORS_KEY = 'originalColorCustomizations';
 const ORIGINAL_THEME_KEY = 'originalColorTheme';
 
@@ -12,75 +12,75 @@ export function initState(state: vscode.Memento): void {
   globalState = state;
 }
 
-// --- Dismiss counts ---
+// --- Per-PR Brutality Levels (time-based escalation) ---
 
-function getDismissCounts(): Record<string, number> {
-  return globalState.get<Record<string, number>>(DISMISS_COUNTS_KEY, {});
+function getBrutalityLevels(): Record<string, number> {
+  return globalState.get<Record<string, number>>(BRUTALITY_LEVELS_KEY, {});
 }
 
-export function getDismissCount(prId: string): number {
-  return getDismissCounts()[prId] ?? 0;
+export function getBrutalityLevel(prId: string): number {
+  return getBrutalityLevels()[prId] ?? 0;
 }
 
-export async function incrementDismiss(prId: string): Promise<void> {
-  const counts = getDismissCounts();
-  counts[prId] = (counts[prId] ?? 0) + 1;
-  await globalState.update(DISMISS_COUNTS_KEY, counts);
+export async function setBrutalityLevel(prId: string, level: number): Promise<void> {
+  const levels = getBrutalityLevels();
+  levels[prId] = level;
+  await globalState.update(BRUTALITY_LEVELS_KEY, levels);
 }
 
-export async function resetDismiss(prId: string): Promise<void> {
-  const counts = getDismissCounts();
-  delete counts[prId];
-  await globalState.update(DISMISS_COUNTS_KEY, counts);
+export async function incrementBrutalityLevel(prId: string, maxLevel: number): Promise<void> {
+  const levels = getBrutalityLevels();
+  const current = levels[prId] ?? 0;
+  const newLevel = Math.min(current + 1, maxLevel);
+  levels[prId] = newLevel;
+  await globalState.update(BRUTALITY_LEVELS_KEY, levels);
 }
 
-export async function resetAllDismissCounts(): Promise<void> {
-  await globalState.update(DISMISS_COUNTS_KEY, {});
-  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, {});
+export async function resetBrutalityLevel(prId: string): Promise<void> {
+  const levels = getBrutalityLevels();
+  delete levels[prId];
+  await globalState.update(BRUTALITY_LEVELS_KEY, levels);
+}
+
+export async function resetAllBrutalityLevels(): Promise<void> {
+  await globalState.update(BRUTALITY_LEVELS_KEY, {});
+  await globalState.update(LEVEL_UP_TIMES_KEY, {});
 }
 
 export async function cleanupStale(currentPrIds: Set<string>): Promise<void> {
-  const counts = getDismissCounts();
-  const cleaned: Record<string, number> = {};
-  for (const [id, count] of Object.entries(counts)) {
+  const levels = getBrutalityLevels();
+  const cleanedLevels: Record<string, number> = {};
+  for (const [id, level] of Object.entries(levels)) {
     if (currentPrIds.has(id)) {
-      cleaned[id] = count;
+      cleanedLevels[id] = level;
     }
   }
-  await globalState.update(DISMISS_COUNTS_KEY, cleaned);
+  await globalState.update(BRUTALITY_LEVELS_KEY, cleanedLevels);
 
-  const timestamps = getFirstSnoozeTimestamps();
-  const cleanedTimestamps: Record<string, number> = {};
-  for (const [id, ts] of Object.entries(timestamps)) {
+  const levelUpTimes = getLevelUpTimes();
+  const cleanedTimes: Record<string, number> = {};
+  for (const [id, time] of Object.entries(levelUpTimes)) {
     if (currentPrIds.has(id)) {
-      cleanedTimestamps[id] = ts;
+      cleanedTimes[id] = time;
     }
   }
-  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, cleanedTimestamps);
+  await globalState.update(LEVEL_UP_TIMES_KEY, cleanedTimes);
 }
 
-// --- First snooze timestamps (for snooze-based escalation) ---
+// --- Level-up timestamps (track when each PR was last escalated) ---
 
-function getFirstSnoozeTimestamps(): Record<string, number> {
-  return globalState.get<Record<string, number>>(FIRST_SNOOZE_TIMESTAMPS_KEY, {});
+function getLevelUpTimes(): Record<string, number> {
+  return globalState.get<Record<string, number>>(LEVEL_UP_TIMES_KEY, {});
 }
 
-export function getFirstSnoozeTimestamp(prId: string): number | undefined {
-  return getFirstSnoozeTimestamps()[prId];
+export function getLevelUpTime(prId: string): number | undefined {
+  return getLevelUpTimes()[prId];
 }
 
-export async function setFirstSnoozeTimestamp(prId: string): Promise<void> {
-  const timestamps = getFirstSnoozeTimestamps();
-  if (timestamps[prId] === undefined) {
-    timestamps[prId] = Date.now();
-    await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, timestamps);
-  }
-}
-
-export async function clearFirstSnoozeTimestamp(prId: string): Promise<void> {
-  const timestamps = getFirstSnoozeTimestamps();
-  delete timestamps[prId];
-  await globalState.update(FIRST_SNOOZE_TIMESTAMPS_KEY, timestamps);
+export async function setLevelUpTime(prId: string, time: number): Promise<void> {
+  const times = getLevelUpTimes();
+  times[prId] = time;
+  await globalState.update(LEVEL_UP_TIMES_KEY, times);
 }
 
 // --- Snooze ---
@@ -145,8 +145,4 @@ export async function restoreOriginalTheme(): Promise<void> {
       .update('colorTheme', original, vscode.ConfigurationTarget.Global);
     await globalState.update(ORIGINAL_THEME_KEY, undefined);
   }
-}
-
-export function getMaxLevel(dismissCount: number, maxAllowed: number): number {
-  return Math.min(dismissCount, maxAllowed);
 }

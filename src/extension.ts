@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getConfig } from './config';
 import {
   initState,
-  resetAllDismissCounts,
+  resetAllBrutalityLevels,
   setSnooze,
   restoreOriginalColors,
   restoreOriginalTheme,
@@ -152,7 +152,7 @@ export async function activate(
     vscode.commands.registerCommand(
       'annoyingReviewReminder.resetEscalation',
       async () => {
-        await resetAllDismissCounts();
+        await resetAllBrutalityLevels();
         stopNuclear();
         disposeAggressive();
         disposeSoundPanel();
@@ -236,7 +236,7 @@ export async function activate(
         disposeSoundPanel();
         await restoreOriginalColors();
         await restoreOriginalTheme();
-        await resetAllDismissCounts();
+        await resetAllBrutalityLevels();
 
         vscode.window.showInformationMessage(
           '🤝 You promised to review! Escalation reset. We\'ll check again in 10 minutes...',

@@ -64,15 +64,15 @@ function buildWebviewHtml(reviews: PendingReview[]): string {
   }
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    10% { transform: translateX(-10px) rotate(-1deg); }
-    20% { transform: translateX(10px) rotate(1deg); }
-    30% { transform: translateX(-10px) rotate(0deg); }
-    40% { transform: translateX(10px) rotate(1deg); }
-    50% { transform: translateX(-5px) rotate(-1deg); }
-    60% { transform: translateX(5px) rotate(0deg); }
-    70% { transform: translateX(-5px) rotate(-1deg); }
-    80% { transform: translateX(5px) rotate(1deg); }
-    90% { transform: translateX(-2px) rotate(0deg); }
+    10% { transform: translateX(-5px) rotate(-1deg); }
+    20% { transform: translateX(5px) rotate(1deg); }
+    30% { transform: translateX(-5px) rotate(0deg); }
+    40% { transform: translateX(5px) rotate(1deg); }
+    50% { transform: translateX(-3px) rotate(-1deg); }
+    60% { transform: translateX(3px) rotate(0deg); }
+    70% { transform: translateX(-3px) rotate(-1deg); }
+    80% { transform: translateX(3px) rotate(1deg); }
+    90% { transform: translateX(-1px) rotate(0deg); }
   }
   .shake { animation: shake 0.5s infinite; }
   .container {
@@ -237,10 +237,9 @@ export const aggressive: ReminderLevel = {
     webviewPanel.reveal(vscode.ViewColumn.One);
 
     const action = await vscode.window.showErrorMessage(
-      `🚨🚨🚨 ${reviews.length} REVIEWS PENDING! Your VS Code will keep flashing until you review! 🚨🚨🚨`,
+      `🚨🚨🚨 ${reviews.length} REVIEWS PENDING! Hey! Your colleagues are waiting! 🚨🚨🚨`,
       { modal: true },
       'Open All PRs',
-      'Snooze'
     );
 
     if (action === 'Open All PRs') {
@@ -249,10 +248,6 @@ export const aggressive: ReminderLevel = {
       }
       stopColorCycling();
       return 'opened';
-    }
-    if (action === 'Snooze') {
-      stopColorCycling();
-      return 'snoozed';
     }
     // Color cycling continues on dismiss!
     return 'dismissed';

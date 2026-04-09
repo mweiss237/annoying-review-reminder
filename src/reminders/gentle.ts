@@ -49,15 +49,11 @@ export const gentle: ReminderLevel = {
     const action = await vscode.window.showInformationMessage(
       message,
       'Open First PR',
-      'Snooze'
     );
 
     if (action === 'Open First PR') {
       await vscode.env.openExternal(vscode.Uri.parse(reviews[0].url));
       return 'opened';
-    }
-    if (action === 'Snooze') {
-      return 'snoozed';
     }
     return 'dismissed';
   },
