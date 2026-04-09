@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { PendingReview, ReminderAction, ReminderLevel } from '../types';
 import {
-    saveOriginalColors,
-    saveOriginalTheme,
+  saveOriginalColors,
+  saveOriginalTheme,
 } from '../state';
 import { updateStatusBar } from './gentle';
 
