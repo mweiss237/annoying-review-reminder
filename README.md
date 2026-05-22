@@ -49,8 +49,9 @@ Each time you dismiss a reminder, the next one gets **worse**:
 | `annoyingReviewReminder.enabled` | `true` | Enable/disable the extension |
 | `annoyingReviewReminder.repos` | `[]` | Repos to watch (`["owner/repo"]`). Empty = all |
 | `annoyingReviewReminder.pollIntervalSeconds` | `300` | Check interval in seconds |
-| `annoyingReviewReminder.maxBrutalityLevel` | `5` | Max escalation level (0–5) |
+| `annoyingReviewReminder.maxBrutalityLevel` | `4` | Max escalation level (0–5) |
 | `annoyingReviewReminder.snoozeDurationMinutes` | `30` | Snooze duration in minutes |
+| `annoyingReviewReminder.pauseWhenIdle` | `true` | Pauses extension when window gets idle |
 
 ## Getting Started
 
