@@ -1,13 +1,13 @@
-import * as vscode from 'vscode';
-import { getConfig } from './config';
+import * as vscode from "vscode";
+import { getConfig } from "./config";
 import {
   initState,
   resetAllBrutalityLevels,
   setSnooze,
   restoreOriginalColors,
   restoreOriginalTheme,
-} from './state';
-import { getGitHubSession } from './github/auth';
+} from "./state";
+import { getGitHubSession } from "./github/auth";
 import {
   startPolling,
   poll,
@@ -15,18 +15,32 @@ import {
   fullCleanup,
   getOutputChannel,
   getLastReviews,
+  setIdlePaused,
   isPaused,
   togglePause,
-} from './reminders/engine';
-import { stopNuclear } from './reminders/nuclear';
-import { disposeAggressive } from './reminders/aggressive';
-import { disposeSoundPanel } from './reminders/intrusive';
+} from "./reminders/engine";
+import { stopNuclear } from "./reminders/nuclear";
+import { disposeAggressive } from "./reminders/aggressive";
+import { disposeSoundPanel } from "./reminders/intrusive";
 
 export async function activate(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ): Promise<void> {
+  // Listen for window state changes to pause/resume on idle/lock
+  const { pauseWhenIdle } = getConfig();
+  if (pauseWhenIdle) {
+    context.subscriptions.push(
+      vscode.window.onDidChangeWindowState((state) => {
+        // Use state.active: false means VSCode is not active (PC locked, idle, etc)
+        setIdlePaused(!state.active, context);
+        output.appendLine(
+          `Window state changed. Extension ${!state.active ? "paused" : "resumed"}`,
+        );
+      }),
+    );
+  }
   const output = getOutputChannel();
-  output.appendLine('Annoying Review Reminder activating...');
+  output.appendLine("Annoying Review Reminder activating...");
 
   // Initialize persistent state
   initState(context.globalState);
@@ -34,27 +48,27 @@ export async function activate(
   // Try to authenticate silently first
   try {
     await getGitHubSession(false);
-    output.appendLine('GitHub authentication: already signed in');
+    output.appendLine("GitHub authentication: already signed in");
   } catch {
     output.appendLine(
-      'GitHub authentication: not signed in yet, will prompt on first poll'
+      "GitHub authentication: not signed in yet, will prompt on first poll",
     );
   }
 
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.refresh',
+      "annoyingReviewReminder.refresh",
       async () => {
-        output.appendLine('Manual refresh triggered');
+        output.appendLine("Manual refresh triggered");
         await poll(context);
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.showReviews',
+      "annoyingReviewReminder.showReviews",
       async () => {
         const reviews = getLastReviews();
         const pausedState = isPaused();
@@ -67,33 +81,39 @@ export async function activate(
               label: `$(git-pull-request) ${r.repo}#${r.number}`,
               description: r.title,
               detail: `by ${r.author}  $(diff-added) ${r.additions}  $(diff-removed) ${r.deletions}`,
-            }))
+            })),
           );
-          items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+          items.push({ label: "", kind: vscode.QuickPickItemKind.Separator });
         }
 
         items.push({
-          label: pausedState ? '$(debug-start) Resume Reminders' : '$(debug-pause) Pause Reminders',
+          label: pausedState
+            ? "$(debug-start) Resume Reminders"
+            : "$(debug-pause) Pause Reminders",
         });
-        items.push({ label: '$(refresh) Refresh Reviews' });
+        items.push({ label: "$(refresh) Refresh Reviews" });
 
         const selected = await vscode.window.showQuickPick(items, {
-          placeHolder: reviews.length > 0
-            ? `${reviews.length} pending review${reviews.length === 1 ? '' : 's'}`
-            : 'No pending reviews',
-          title: 'Review Reminder',
+          placeHolder:
+            reviews.length > 0
+              ? `${reviews.length} pending review${reviews.length === 1 ? "" : "s"}`
+              : "No pending reviews",
+          title: "Review Reminder",
         });
 
         if (!selected) {
           return;
         }
 
-        if (selected.label.includes('Pause Reminders') || selected.label.includes('Resume Reminders')) {
+        if (
+          selected.label.includes("Pause Reminders") ||
+          selected.label.includes("Resume Reminders")
+        ) {
           togglePause(context);
           return;
         }
 
-        if (selected.label.includes('Refresh Reviews')) {
+        if (selected.label.includes("Refresh Reviews")) {
           await poll(context);
           return;
         }
@@ -102,34 +122,34 @@ export async function activate(
         const match = selected.label.match(/#(\d+)$/);
         if (match) {
           const prNumber = parseInt(match[1], 10);
-          const review = reviews.find((r) => r.number === prNumber && selected.label.includes(r.repo));
+          const review = reviews.find(
+            (r) => r.number === prNumber && selected.label.includes(r.repo),
+          );
           if (review) {
             await vscode.env.openExternal(vscode.Uri.parse(review.url));
           }
         }
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.togglePause',
+      "annoyingReviewReminder.togglePause",
       () => {
         togglePause(context);
         const paused = isPaused();
         vscode.window.showInformationMessage(
-          paused
-            ? 'Review reminders paused.'
-            : 'Review reminders resumed.'
+          paused ? "Review reminders paused." : "Review reminders resumed.",
         );
-        output.appendLine(paused ? 'Paused' : 'Resumed');
-      }
-    )
+        output.appendLine(paused ? "Paused" : "Resumed");
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.snooze',
+      "annoyingReviewReminder.snooze",
       async () => {
         const config = getConfig();
         await setSnooze(config.snoozeDurationMinutes);
@@ -139,18 +159,18 @@ export async function activate(
         await restoreOriginalColors();
         await restoreOriginalTheme();
         vscode.window.showInformationMessage(
-          `Review reminders snoozed for ${config.snoozeDurationMinutes} minutes.`
+          `Review reminders snoozed for ${config.snoozeDurationMinutes} minutes.`,
         );
         output.appendLine(
-          `Snoozed for ${config.snoozeDurationMinutes} minutes`
+          `Snoozed for ${config.snoozeDurationMinutes} minutes`,
         );
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.resetEscalation',
+      "annoyingReviewReminder.resetEscalation",
       async () => {
         await resetAllBrutalityLevels();
         stopNuclear();
@@ -159,32 +179,32 @@ export async function activate(
         await restoreOriginalColors();
         await restoreOriginalTheme();
         vscode.window.showInformationMessage(
-          'Escalation reset. All effects restored to normal.'
+          "Escalation reset. All effects restored to normal.",
         );
-        output.appendLine('Escalation reset and effects cleaned up');
-      }
-    )
+        output.appendLine("Escalation reset and effects cleaned up");
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.selectRepos',
+      "annoyingReviewReminder.selectRepos",
       async () => {
         const session = await getGitHubSession(true);
 
         // Fetch user's repos from GitHub
         const response = await fetch(
-          'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',
+          "https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member",
           {
             headers: {
               Authorization: `Bearer ${session.accessToken}`,
-              Accept: 'application/vnd.github+json',
+              Accept: "application/vnd.github+json",
             },
-          }
+          },
         );
 
         if (!response.ok) {
-          vscode.window.showErrorMessage('Failed to fetch repositories.');
+          vscode.window.showErrorMessage("Failed to fetch repositories.");
           return;
         }
 
@@ -201,34 +221,29 @@ export async function activate(
           })),
           {
             canPickMany: true,
-            placeHolder:
-              'Select repositories to watch (leave empty for all)',
-            title: 'Review Reminder: Select Repositories',
-          }
+            placeHolder: "Select repositories to watch (leave empty for all)",
+            title: "Review Reminder: Select Repositories",
+          },
         );
 
         if (selected !== undefined) {
           const selectedRepos = selected.map((s) => s.label);
           await vscode.workspace
-            .getConfiguration('annoyingReviewReminder')
-            .update(
-              'repos',
-              selectedRepos,
-              vscode.ConfigurationTarget.Global
-            );
+            .getConfiguration("annoyingReviewReminder")
+            .update("repos", selectedRepos, vscode.ConfigurationTarget.Global);
           vscode.window.showInformationMessage(
             selectedRepos.length > 0
-              ? `Now watching: ${selectedRepos.join(', ')}`
-              : 'Watching all repositories with pending reviews.'
+              ? `Now watching: ${selectedRepos.join(", ")}`
+              : "Watching all repositories with pending reviews.",
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'annoyingReviewReminder.promiseToReview',
+      "annoyingReviewReminder.promiseToReview",
       async () => {
         // Nuclear escape hatch
         stopNuclear();
@@ -239,32 +254,32 @@ export async function activate(
         await resetAllBrutalityLevels();
 
         vscode.window.showInformationMessage(
-          '🤝 You promised to review! Escalation reset. We\'ll check again in 10 minutes...',
+          "🤝 You promised to review! Escalation reset. We'll check again in 10 minutes...",
         );
 
         // Set a short snooze (10 minutes) then re-escalate if not done
         await setSnooze(10);
         output.appendLine(
-          'Nuclear mode stopped — promise to review with 10-minute grace period'
+          "Nuclear mode stopped — promise to review with 10-minute grace period",
         );
-      }
-    )
+      },
+    ),
   );
 
   // Listen for configuration changes to restart polling with new interval
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('annoyingReviewReminder')) {
-        output.appendLine('Configuration changed, restarting polling');
+      if (e.affectsConfiguration("annoyingReviewReminder")) {
+        output.appendLine("Configuration changed, restarting polling");
         restartPolling(context);
       }
-    })
+    }),
   );
 
   // Start the polling loop
   startPolling(context);
 
-  output.appendLine('Annoying Review Reminder activated!');
+  output.appendLine("Annoying Review Reminder activated!");
 }
 
 export function deactivate(): void {

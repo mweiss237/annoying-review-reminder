@@ -80,10 +80,10 @@
         },
         "annoyingReviewReminder.maxBrutalityLevel": {
           "type": "number",
-          "default": 5,
+          "default": 4,
           "minimum": 0,
           "maximum": 5,
-          "description": "Maximum brutality level (0=Gentle, 1=Nudge, 2=Pushy, 3=Intrusive, 4=Aggressive, 5=Nuclear). - Default: 5"
+          "description": "Maximum brutality level (0=Gentle, 1=Nudge, 2=Pushy, 3=Intrusive, 4=Aggressive, 5=Nuclear). - Default: 4"
         },
         "annoyingReviewReminder.snoozeDurationMinutes": {
           "type": "number",
@@ -101,6 +101,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable or disable the review reminder. - Default: true"
+        },
+        "annoyingReviewReminder.pauseWhenIdle": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pause reminders when VS Code is inactive (e.g. PC locked, idle, or window not active)."
         }
       }
     }

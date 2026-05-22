@@ -7,6 +7,7 @@ export interface ExtensionConfig {
   snoozeDurationMinutes: number;
   snoozeEscalationThresholdMinutes: number;
   enabled: boolean;
+  pauseWhenIdle: boolean;
 }
 
 export function getConfig(): ExtensionConfig {
@@ -18,5 +19,6 @@ export function getConfig(): ExtensionConfig {
     snoozeDurationMinutes: cfg.get<number>('snoozeDurationMinutes', 30),
     snoozeEscalationThresholdMinutes: cfg.get<number>('snoozeEscalationThresholdMinutes', 120),
     enabled: cfg.get<boolean>('enabled', true),
+    pauseWhenIdle: cfg.get<boolean>('pauseWhenIdle', true),
   };
 }

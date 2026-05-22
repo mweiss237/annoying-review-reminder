@@ -19,9 +19,11 @@ import { disposeSoundPanel } from "./intrusive";
 import { disposeAggressive } from "./aggressive";
 import { stopNuclear } from "./nuclear";
 
+
 let pollInterval: ReturnType<typeof setInterval> | undefined;
 let isPolling = false;
 let paused = false;
+let idlePaused = false;
 let lastReviews: import("../types").PendingReview[] = [];
 let outputChannel: vscode.OutputChannel;
 
@@ -46,6 +48,24 @@ export function isPaused(): boolean {
   return paused;
 }
 
+export function isIdlePaused(): boolean {
+  return idlePaused;
+}
+
+export function setIdlePaused(value: boolean, context?: vscode.ExtensionContext): void {
+  if (idlePaused !== value) {
+    idlePaused = value;
+    if (idlePaused) {
+      stopPolling();
+      log("Reminders paused due to inactivity (idle)");
+      updateStatusBar(0, true);
+    } else if (!paused && context) {
+      startPolling(context);
+      log("Reminders resumed after returning from idle");
+    }
+  }
+}
+
 export function togglePause(context: vscode.ExtensionContext): void {
   paused = !paused;
   if (paused) {
@@ -64,14 +84,17 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
     return;
   }
 
+
   const config = getConfig();
-  if (!config.enabled || paused) {
+  if (!config.enabled || paused || idlePaused) {
     log(
       paused
         ? "Extension paused, skipping poll"
+        : idlePaused
+        ? "Reminders paused due to inactivity (idle), skipping poll"
         : "Extension disabled, skipping poll",
     );
-    updateStatusBar(0, paused);
+    updateStatusBar(0, paused || idlePaused);
     return;
   }
 
