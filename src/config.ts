@@ -6,6 +6,8 @@ export interface ExtensionConfig {
   maxBrutalityLevel: number;
   snoozeDurationMinutes: number;
   snoozeEscalationThresholdMinutes: number;
+  lessRelevantReviewLabels: string[];
+  includeDraftReviews: boolean;
   enabled: boolean;
   pauseWhenIdle: boolean;
 }
@@ -18,6 +20,8 @@ export function getConfig(): ExtensionConfig {
     maxBrutalityLevel: cfg.get<number>('maxBrutalityLevel', 5),
     snoozeDurationMinutes: cfg.get<number>('snoozeDurationMinutes', 30),
     snoozeEscalationThresholdMinutes: cfg.get<number>('snoozeEscalationThresholdMinutes', 120),
+    lessRelevantReviewLabels: cfg.get<string[]>('lessRelevantReviewLabels', ['dependency']),
+    includeDraftReviews: cfg.get<boolean>('includeDraftReviews', false),
     enabled: cfg.get<boolean>('enabled', true),
     pauseWhenIdle: cfg.get<boolean>('pauseWhenIdle', true),
   };

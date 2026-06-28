@@ -75,7 +75,10 @@ export function togglePause(context: vscode.ExtensionContext): void {
     startPolling(context);
     log("Extension resumed");
   }
-  updateStatusBar(paused ? 0 : lastReviews.length, paused);
+
+  const lessRelevantCount = lastReviews.filter((review) => review.isLessRelevant).length;
+  const actionableCount = lastReviews.length - lessRelevantCount;
+  updateStatusBar(paused ? 0 : actionableCount, paused, lessRelevantCount);
 }
 
 export async function poll(context: vscode.ExtensionContext): Promise<void> {
@@ -116,13 +119,24 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
       return;
     }
 
+    const actionableReviews = reviews.filter((review) => !review.isLessRelevant);
+    const lessRelevantReviews = reviews.filter((review) => review.isLessRelevant);
+
     // Clean up stale brutality levels for PRs no longer pending
     const currentIds = new Set(reviews.map(({ id }) => id));
     await cleanupStale(currentIds);
 
+    if (actionableReviews.length === 0) {
+      updateStatusBar(0, false, lessRelevantReviews.length);
+      cleanupAllEffects();
+      await restoreOriginalColors();
+      await restoreOriginalTheme();
+      return;
+    }
+
     // Check for time-based escalation: if snooze duration has passed, increase level
     const snoozeDurationMs = config.snoozeDurationMinutes * 60 * 1000;
-    for (const review of reviews) {
+    for (const review of actionableReviews) {
       const lastLevelUp = getLevelUpTime(review.id);
       const currentLevel = getBrutalityLevel(review.id);
 
@@ -146,9 +160,9 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
       }
     }
 
-    // Determine the highest brutality level across all pending reviews
+    // Determine the highest brutality level across actionable reviews only
     let maxActiveLevel = 0;
-    for (const review of reviews) {
+    for (const review of actionableReviews) {
       const level = getBrutalityLevel(review.id);
       maxActiveLevel = Math.max(maxActiveLevel, level);
     }
@@ -158,22 +172,23 @@ export async function poll(context: vscode.ExtensionContext): Promise<void> {
     );
 
     // If currently snoozed, only update statusbar, don't show notification
+    updateStatusBar(actionableReviews.length, false, lessRelevantReviews.length);
+
     if (isSnoozing()) {
       log("Currently snoozed, updating statusbar only");
-      updateStatusBar(reviews.length, false);
       return;
     }
 
-    // Execute the highest level with all reviews
+    // Execute the highest level with actionable reviews only
     const levelHandler = getLevel(maxActiveLevel);
-    levelHandler.execute(reviews, context).then(async (action) => {
+    levelHandler.execute(actionableReviews, context).then(async (action) => {
       log(`User action: ${action}`);
 
       // Handle the user action
       switch (action) {
         case "opened":
           // Reset brutality levels for opened reviews
-          for (const review of reviews) {
+          for (const review of actionableReviews) {
             await resetBrutalityLevel(review.id);
             await setLevelUpTime(review.id, Date.now());
           }

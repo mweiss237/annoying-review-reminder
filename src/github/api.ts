@@ -1,6 +1,6 @@
-import { PendingReview } from '../types';
-import { getGitHubSession } from './auth';
-import { getConfig } from '../config';
+import { PendingReview } from "../types";
+import { getGitHubSession } from "./auth";
+import { getConfig } from "../config";
 
 interface GitHubSearchResponse {
   total_count: number;
@@ -16,11 +16,13 @@ interface GitHubSearchItem {
   created_at: string;
   repository_url: string;
   pull_request?: { html_url: string };
+  draft?: boolean;
+  labels?: Array<{ name: string }>;
 }
 
 function repoFromUrl(repositoryUrl: string): string {
   // repositoryUrl looks like "https://api.github.com/repos/owner/repo"
-  const parts = repositoryUrl.split('/');
+  const parts = repositoryUrl.split("/");
   return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
 }
 
@@ -32,7 +34,7 @@ interface GitHubPullResponse {
 async function fetchPrStats(
   repo: string,
   prNumber: number,
-  accessToken: string
+  accessToken: string,
 ): Promise<{ additions: number; deletions: number }> {
   try {
     const response = await fetch(
@@ -40,10 +42,10 @@ async function fetchPrStats(
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
         },
-      }
+      },
     );
     if (!response.ok) {
       return { additions: 0, deletions: 0 };
@@ -60,31 +62,35 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
   const config = getConfig();
 
   const repoFilters = config.repos;
-  let query = 'is:open is:pr review-requested:@me draft:false';
-
-  if (repoFilters.length === 1) {
-    query += ` repo:${repoFilters[0]}`;
+  // let query = ["is:open", "is:pr", "review-requested:@me"];
+  let query = ["is:open", "is:pr"];
+  if (!config.includeDraftReviews) {
+    query.push("draft:false");
   }
 
-  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=100&sort=created&order=desc`;
+  if (repoFilters.length === 1) {
+    query.push(`repo:${repoFilters[0]}`);
+  }
+
+  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query.join(" "))}&per_page=100&sort=created&order=desc`;
 
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${session.accessToken}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
     },
   });
 
   if (response.status === 403) {
-    const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
-    if (rateLimitRemaining === '0') {
-      const resetTime = response.headers.get('X-RateLimit-Reset');
+    const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
+    if (rateLimitRemaining === "0") {
+      const resetTime = response.headers.get("X-RateLimit-Reset");
       const resetDate = resetTime
         ? new Date(parseInt(resetTime) * 1000)
         : undefined;
       throw new Error(
-        `GitHub API rate limit exceeded. Resets at ${resetDate?.toLocaleTimeString() ?? 'unknown'}.`
+        `GitHub API rate limit exceeded. Resets at ${resetDate?.toLocaleTimeString() ?? "unknown"}.`,
       );
     }
     throw new Error(`GitHub API returned 403: ${await response.text()}`);
@@ -92,21 +98,47 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
 
   if (!response.ok) {
     throw new Error(
-      `GitHub API returned ${response.status}: ${await response.text()}`
+      `GitHub API returned ${response.status}: ${await response.text()}`,
     );
   }
 
   const data = (await response.json()) as GitHubSearchResponse;
 
-  const basicReviews = data.items.map((item) => ({
-    id: `${item.id}`,
-    number: item.number,
-    title: item.title,
-    url: item.pull_request?.html_url ?? item.html_url,
-    repo: repoFromUrl(item.repository_url),
-    author: item.user.login,
-    createdAt: item.created_at,
-  }));
+  const lessRelevantLabels = new Set(
+    config.lessRelevantReviewLabels
+      .map((label) => label.toLowerCase().trim())
+      .filter(Boolean),
+  );
+
+  const basicReviews = data.items.map((item) => {
+    const isDraft = item?.draft ?? false;
+    const allLabels =
+      item.labels?.map((label) => label.name.toLowerCase()) ?? [];
+    const matchingLabel = allLabels.find((label) =>
+      lessRelevantLabels.has(label),
+    );
+    const isLessRelevant = isDraft || Boolean(matchingLabel);
+    const lessRelevantReasons: string[] = [];
+
+    if (isDraft) {
+      lessRelevantReasons.push("draft");
+    }
+    if (matchingLabel) {
+      lessRelevantReasons.push(`label:${matchingLabel}`);
+    }
+
+    return {
+      id: `${item.id}`,
+      number: item.number,
+      title: item.title,
+      url: item.pull_request?.html_url ?? item.html_url,
+      repo: repoFromUrl(item.repository_url),
+      author: item.user.login,
+      createdAt: item.created_at,
+      isLessRelevant,
+      lessRelevantReason: lessRelevantReasons.join(", "),
+    };
+  });
 
   // Client-side filter when multiple repos are configured
   let filtered = basicReviews;
@@ -117,7 +149,7 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
 
   // Fetch additions/deletions stats for each PR
   const statsPromises = filtered.map((r) =>
-    fetchPrStats(r.repo, r.number, session.accessToken)
+    fetchPrStats(r.repo, r.number, session.accessToken),
   );
   const stats = await Promise.all(statsPromises);
 

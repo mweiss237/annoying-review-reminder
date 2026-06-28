@@ -8,6 +8,8 @@ export interface PendingReview {
   createdAt: string;
   additions: number;
   deletions: number;
+  isLessRelevant: boolean;
+  lessRelevantReason?: string;
 }
 
 export type ReminderAction = 'dismissed' | 'opened' | 'snoozed';

@@ -97,6 +97,19 @@
           "minimum": 1,
           "description": "How long (in minutes) a user can keep snoozing before the reminder escalates to the next level. - Default: 120"
         },
+        "annoyingReviewReminder.lessRelevantReviewLabels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["dependency"],
+          "description": "Labels that mark PRs as less relevant. Less relevant PRs are shown but excluded from reminder escalation."
+        },
+        "annoyingReviewReminder.includeDraftReviews": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include draft PRs in the review list as less relevant items."
+        },
         "annoyingReviewReminder.enabled": {
           "type": "boolean",
           "default": true,

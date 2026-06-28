@@ -14,21 +14,40 @@ function getOrCreateStatusBar(): vscode.StatusBarItem {
   return statusBarItem;
 }
 
-export function updateStatusBar(count: number, paused?: boolean): void {
+export function updateStatusBar(
+  count: number,
+  paused?: boolean,
+  lessRelevantCount = 0,
+): void {
   const bar = getOrCreateStatusBar();
   if (paused) {
     bar.text = `$(git-pull-request) Reviews (Paused)`;
     bar.tooltip = 'Click to see options — reminders paused';
     bar.show();
-  } else if (count > 0) {
-    bar.text = `$(git-pull-request) ${count} review${count === 1 ? '' : 's'} pending`;
+    return;
+  }
+
+  if (count > 0) {
+    bar.text = `$(git-pull-request) ${count} review${count === 1 ? '' : 's'} pending${
+      lessRelevantCount > 0 ? ` (+${lessRelevantCount} less relevant)` : ''
+    }`;
     bar.tooltip = 'Click to see pending reviews';
     bar.show();
-  } else {
-    bar.text = '$(git-pull-request) No reviews pending';
-    bar.tooltip = 'All clear!';
-    bar.show();
+    return;
   }
+
+  if (lessRelevantCount > 0) {
+    bar.text = `$(git-pull-request) ${lessRelevantCount} less relevant review${
+      lessRelevantCount === 1 ? '' : 's'
+    }`;
+    bar.tooltip = 'Click to see less relevant reviews';
+    bar.show();
+    return;
+  }
+
+  bar.text = '$(git-pull-request) No reviews pending';
+  bar.tooltip = 'All clear!';
+  bar.show();
 }
 
 export const gentle: ReminderLevel = {

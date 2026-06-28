@@ -73,16 +73,38 @@ export async function activate(
         const reviews = getLastReviews();
         const pausedState = isPaused();
 
+        const actionableReviews = reviews.filter((review) => !review.isLessRelevant);
+        const lessRelevantReviews = reviews.filter((review) => review.isLessRelevant);
+
         const items: vscode.QuickPickItem[] = [];
 
         if (reviews.length > 0) {
-          items.push(
-            ...reviews.map((r) => ({
-              label: `$(git-pull-request) ${r.repo}#${r.number}`,
-              description: r.title,
-              detail: `by ${r.author}  $(diff-added) ${r.additions}  $(diff-removed) ${r.deletions}`,
-            })),
-          );
+          if (actionableReviews.length > 0) {
+            items.push(
+              ...actionableReviews.map((r) => ({
+                label: `$(git-pull-request) ${r.repo}#${r.number}`,
+                description: r.title,
+                detail: `by ${r.author}  $(diff-added) ${r.additions}  $(diff-removed) ${r.deletions}`,
+              })),
+            );
+          }
+
+          if (lessRelevantReviews.length > 0) {
+            if (actionableReviews.length > 0) {
+              items.push({ label: "", kind: vscode.QuickPickItemKind.Separator });
+            }
+
+            items.push(
+              ...lessRelevantReviews.map((r) => ({
+                label: `$(git-pull-request) ${r.repo}#${r.number}`,
+                description: r.title,
+                detail: r.lessRelevantReason
+                  ? `Less relevant: ${r.lessRelevantReason}`
+                  : `by ${r.author}`,
+              })),
+            );
+          }
+
           items.push({ label: "", kind: vscode.QuickPickItemKind.Separator });
         }
 
