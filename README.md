@@ -8,7 +8,7 @@ Your teammates are waiting. Stop ignoring those review requests.
 
 ### 🎚️ 6 Brutality Levels
 
-Each time you dismiss a reminder, the next one gets **worse**:
+Each time your level grace period of your reminder is reached, the next one gets **worse**:
 
 | Level | Name | What Happens |
 |-------|------|-------------|
@@ -17,7 +17,7 @@ Each time you dismiss a reminder, the next one gets **worse**:
 | 2 | **Pushy** | **Modal dialog** (blocks everything) + editor turns **red** |
 | 3 | **Intrusive** | Random text document pops up with review list + **sound alert** |
 | 4 | **Aggressive** | Full-screen flashing webview + alarm sound + workbench color cycling |
-| 5 | **Nuclear** | Multiple flashing panels + theme cycling + document spam. **Only escape: "I Promise to Review!" command** |
+| 5 | **Nuclear** | ⚠️ NOT RECOMMENDED - ⚡ FLASH WARNING - Continuously self opening flashing panels + theme cycling + document spam. **Only escape: "I Promise to Review!" command**. IF YOU DON'T REACT, YOUR WINDOW MIGHT HANG |
 
 ### 🔗 GitHub Integration
 
@@ -32,15 +32,22 @@ Each time you dismiss a reminder, the next one gets **worse**:
 - **Snooze duration** — temporary relief (default: 30 minutes)
 - **Repository filter** — select which repos to watch
 
+### 😴 Auto-Pause Detection
+
+The extension gets paused if VS Code is not focussed and you are not actively coding.
+You maybe wonder why but imagine leaving VS Code open over night while the extension is doing its thing. 9/10 wouldn't recommend.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `Review Reminder: Refresh Pending Reviews` | Manually check for pending reviews |
+| `Review Reminder: Refresh Pending Reviews` | Manually refreshes pending reviews |
+| `Review Reminder: Show Pending Reviews` | Shows a list of open PRs you are requested as reviewer |
+| `Review Reminder: Pause / Resume Reminders` | Pauses or resumes the reminder mechanism |
 | `Review Reminder: Snooze All Reminders` | Snooze for the configured duration |
 | `Review Reminder: Reset Escalation & Restore Colors` | Reset all escalation and fix any visual effects |
 | `Review Reminder: Select Repositories to Watch` | Pick repos from your GitHub account |
-| `Review Reminder: I Promise to Review! (Stop Nuclear)` | Nuclear escape hatch — resets everything with a 10-minute grace period |
+| `Review Reminder: I Promise to Review! (Stop Nuclear)` | Nuclear escape hatch - resets everything with a 10-minute grace period |
 
 ## Settings
 
@@ -48,9 +55,11 @@ Each time you dismiss a reminder, the next one gets **worse**:
 |---------|---------|-------------|
 | `annoyingReviewReminder.enabled` | `true` | Enable/disable the extension |
 | `annoyingReviewReminder.repos` | `[]` | Repos to watch (`["owner/repo"]`). Empty = all |
-| `annoyingReviewReminder.pollIntervalSeconds` | `300` | Check interval in seconds |
+| `annoyingReviewReminder.pollIntervalSeconds` | `300` | Poll interval in seconds. If snoozeDurationMinutes is reached with current poll, reminder gets triggert. |
 | `annoyingReviewReminder.maxBrutalityLevel` | `4` | Max escalation level (0–5) |
-| `annoyingReviewReminder.snoozeDurationMinutes` | `30` | Snooze duration in minutes |
+| `annoyingReviewReminder.snoozeDurationMinutes` | `30` | Min. duration between reminders in minutes. Also defines duration for increasing escalation level. |
+| `annoyingReviewReminder.lessRelevantReviewLabels` | `['dependency']` | Set of labels that mark PRs as "less relevant" (shown in list and count in menu bar but excluded from reminder) |
+| `annoyingReviewReminder.includeDraftReviews` | `false` | When `true`, include draft PRs as less relevant items (shown in list and count in menu bar but excluded from reminder) |
 | `annoyingReviewReminder.pauseWhenIdle` | `true` | Pauses extension when window gets idle |
 
 ## Getting Started
