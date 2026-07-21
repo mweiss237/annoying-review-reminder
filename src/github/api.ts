@@ -62,8 +62,7 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
   const config = getConfig();
 
   const repoFilters = config.repos;
-  // let query = ["is:open", "is:pr", "review-requested:@me"];
-  let query = ["is:open", "is:pr"];
+  let query = ["is:open", "is:pr", "review-requested:@me"];
   if (!config.includeDraftReviews) {
     query.push("draft:false");
   }
